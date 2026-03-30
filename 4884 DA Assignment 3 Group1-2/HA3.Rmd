@@ -1,0 +1,284 @@
+---
+title: '4884 Data Analytics: Assignment 3'
+author: 'Group 1: Sofia Papushina(12341721), Sofiia Karnaukhova(12322614), Vladyslava
+  Stepanovska(12328455), Matthäus Georg Engelbrecht(12318768), Samuel Gorazd Kapalla(12319654)'
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+set.seed(1)
+
+if (!require("rpart")) install.packages("rpart")
+if (!require("partykit")) install.packages("partykit")
+if (!require("ranger")) install.packages("ranger")
+if (!require("party")) install.packages("party")
+
+
+library(rpart)
+library(partykit)
+library(ranger)
+library(party)
+```
+
+# Task 1
+First, we are going to start with loading our dataset $housing.csv$ into R.
+```{r}
+tryCatch({
+  library(rstudioapi)
+  setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+  }, error=function(cond){message(paste("cannot change working directory"))
+})
+
+org_data <- read.csv("housing.csv")
+```
+
+Next we would like to remove the missing data from the dataset. We discover that the original dataset contained 207 missing values. 
+
+```{r}
+data <- na.omit(org_data)
+sum(is.na(org_data))
+sum(is.na(data))
+```
+
+We also check the percentage of the data that got lost through this cleaning process. For this purpose we will simply divide the number of rows in the new dataset by the original one. 
+
+```{r} 
+nrow(data)/nrow(org_data)
+```
+
+We see that only a little over 1% of data was lost.  
+  
+Now, we use $str()$ to look at the structure of our dataset and to see all the variables it comprises.
+```{r}
+str(data)
+```
+
+We see that there are 9 numerical variables and 1 categorical. The categorical variable will further need to be factorized in order to be shown in the graph properly.  
+
+In the following graphs, we now will compare the marginal distributions of all features and the response variable before and after the data cleaning process.  
+
+1. Logitude and Latitude
+```{r, fig.width=8, fig.height=12}
+par(mfrow = c(3,2))
+
+# Longitude
+hist(data$longitude, main = "After Cleaning", xlab = "Longitude", col = "green")
+hist(org_data$longitude, main = "Original Dataset", xlab = "Longitude", col = "cyan")
+
+#Latitude
+hist(data$latitude, main = "After Cleaning", xlab = "Latitude", col = "green")
+hist(org_data$latitude, main = "Original Dataset", xlab = "Latitude", col = "cyan")
+
+# Scatter plot
+plot(data$longitude, data$latitude, xlab = "Longtitude", ylab = "Latitude", main = "After cleaning", col = "green")
+plot(org_data$longitude, org_data$latitude, xlab = "Longtitude original", ylab= "Latitude original", main = "Original Dataset", col = "cyan")
+
+```
+
+So, it can be said based on the plots for Longitude and Latitude, that the difference between the original and the cleaned datasets is negligible.  
+
+2. Housing Median Age
+```{r, fig.width=8, fig.height=4}
+par(mfrow = c(1,2))
+hist(data$housing_median_age, xlab= "Median Age", main = "After cleaning", col = "green")
+hist(org_data$housing_median_age, xlab = "Median Age original dataset", main = "Original Dataset", col = "cyan")
+```
+
+In the same way, the difference between the original and cleaned datasets for housing median age appears to be minimal.  
+
+3. Total Rooms
+```{r, fig.width=8, fig.height=4}
+par(mfrow = c(1,2))
+hist(data$total_rooms, xlab = "Total rooms", main = "After cleaning", col = "green")  
+hist(org_data$total_rooms, xlab = "Total rooms", main = "Original Dataset", col = "cyan")
+```
+
+Similarly, based on the plots for total rooms, the difference between the original and cleaned datasets appears to be minimal.  
+
+4. Total Bedrooms
+```{r, fig.width=8, fig.height=4}
+par(mfrow = c(1,2))
+hist(data$total_bedrooms, main = "After cleaning", xlab = "Total bedrooms", col = "green")
+hist(org_data$total_bedrooms, main = "Original Dataset", xlab = "Total bedrooms", col = "cyan")
+```
+
+The same pattern holds for the total bedrooms variable, as there is practically no observable visual difference.  
+
+5. Population
+```{r, fig.width=8, fig.height=4}
+par(mfrow = c(1,2))
+hist(data$population, main = "After cleaning", xlab = "Population", col = "green")
+hist(org_data$population, main = "Original Dataset", xlab = "Population", col = "cyan")
+```
+
+A similar trend can be observed based on the plots for population, where the difference between the original and cleaned datasets appears to be minimal.  
+
+6. Households 
+```{r, fig.width=8, fig.height=4}
+par(mfrow = c(1,2))
+hist(data$households, xlab = "Households" , main = "After cleaning", col = "green")
+hist(data$households ,xlab= "Households", main = "Original dataset", col = "cyan")
+```
+
+The same trend holds for the variable households, as there is essentially no noticeable visual difference.  
+
+7. Median Income
+```{r, fig.width=8, fig.height=4}
+par(mfrow = c(1,2))
+hist(data$median_income, main = "After cleaning", xlab = "Median Income", col = "green")
+hist(org_data$median_income, main = "Original Dataset", xlab = "Median Income", col = "cyan")
+```
+
+The similar trend holds for the variable median income, as there is essentially no noticeable visual difference.  
+
+8. Median house value
+```{r, fig.width=8, fig.height=4}
+par(mfrow = c(1,2))
+hist(data$median_house_value, main = "After cleaning", xlab = "Median House Value", col = "green")
+hist(org_data$median_house_value, main = "Original Dataset", xlab = "Median House Value", col = "cyan")
+```
+
+The same pattern holds for the median house value variable, as there is practically no observable visual difference.  
+
+9. Ocean Proximity
+```{r, fig.width=8, fig.height=4} 
+par(mfrow = c(1,2))
+data$ocean_proximity <- factor(data$ocean_proximity, levels = c("<1H OCEAN", "INLAND", "ISLAND", "NEAR BAY", "NEAR OCEAN"))
+org_data$ocean_proximity <- factor(org_data$ocean_proximity, levels = c("<1H OCEAN", "INLAND", "ISLAND", "NEAR BAY", "NEAR OCEAN"))
+plot(data$ocean_proximity, main = "After cleaning", xlab = "Ocean Proximity", col = "green")
+plot(org_data$ocean_proximity, main = "Original Dataset", xlab= "Ocean Proximity", col = "cyan")
+```
+
+The same trend holds for ocean proximity.  
+To sum up, since only around 1% of the data was removed, the difference in marginal distribution of all features, as well as the response variable, between the original and the cleaned datasets is negligible. Overall, this suggests that it should be alright to use the cleaned dataset for further analysis, as the data cleaning process seems to have preserved the original distribution well.  
+
+# Task 2
+
+Now, we are going to fit the regression tree to the California Housing dataset, with median_house_value as the response variable and all other features (e.g., median_income, ocean_proximity, longitude) as explanatory variables. For this purpose we also specify method = "anova".
+```{r fig.width=15, fig.height=7}
+tree <- rpart(median_house_value ~ ., method = "anova", data = data)
+plot(as.party(tree))
+```
+
+This regression tree uses just 3 key predictors out of 9 variables, precisely longitude, median_income, and ocean_proximity to estimate housing prices, through in total 7 splits. The first split is based on the median_income into median_income above 5.075 and below 5.075, with further splits based on the ocean_proximity, median_income and longitude. Based on the ending nodes boxplots such as node 4, 5, 7, 9, 10, 13, 14 and 15, we can summarize than as low income groups (4,5), medium income groups (7,9,10) and high income groups (13,14,15).  
+
+Low income groups, node 4 and node 5 shows the lowest median values, specifically node 4 has the lowest median values, below 150000. Medium income groups, node 7, node 9 and node node 10 have slightly higher median values, with the highest median value for node 10 with prices mainly between 200000 and 300000, and some outliers reaching up to 500000. Finally, high income groups, node 13, node 14 and node 15, with the highest median value for node 15, around 450000.  
+
+Based on this, we can conclude that median income is the most influential feature in predicting housing prices, as higher income levels reflect higher median house values. Also, ocean proximity impacts housing prices across all income levels. Geographic location, represented by longitude, also plays a role in refining predictions for medium income groups as shown in the fitted tree.  
+
+# Task 3
+
+First, we are going to fit the random forest to the data with permutation importance.
+```{r}
+rf <- ranger(median_house_value ~ ., data = data, importance = "permutation")
+print(rf)
+```
+
+From the output, we can see that the random forest model uses 500 trees, which is the default setting in the ranger package. There are 9 predictor variables, and at each split, the model randomly selects 3 variables (as specified by mtry = 3) from the 9 available for consideration. The target node size of 5 indicates that each leaf node in the trees must contain at least 5 observations. The out-of-bag (OOB) mean squared error (MSE) is approximately 2.29 billion, reflecting the average squared difference between predicted and actual values for OOB samples. Finally, the R-squared value of about 0.829 indicates that the model explains approximately 82.9% of the variance in the target variable (median_house_value).  
+
+Now, we are going to plot the permutation importance which can be obtained via the importance() function.
+
+```{r}
+plot(as.table(importance(rf)), ylab = "Importance", las = 2, cex.axis = 0.5)
+```
+
+From the variable importance plot we can see that median_income and longitude are the most influential features in predicting housing prices, followed by latitude and ocean_proximity. Other variables like housing age, total rooms, bedrooms, population, and households have relatively smaller importance scores. Based on this observation, we can further assume that socioeconomic factors like median_income and geographic location are key determinants of housing values.  
+
+To sum up, the permutation importance plot demonstrates that housing prices are mostly influenced by income levels (median_income) and geographic location (longitude, latitude), which partially aligns with the findings in Task 2. While both models identify median income and ocean proximity as important, the random forest emphasizes longitude and latitude as key predictors, whereas the regression tree only uses longitude and omits latitude. This might be due to the higher complexity of random forest (500 trees) compared to the simpler regression tree.  
+
+Now we produce a partial dependency plot for *median_income* :
+```{r}
+grd <- 10^seq(min(log10(data$median_income)), max(log10(data$median_income)), length.out = 2e1)
+nd <- data[sample.int(nrow(data), 300), ]
+prs <- lapply(grd, \(val) {
+  nd$median_income <- val
+  predict(rf, data = nd, type = "response")$predictions
+})
+matplot(grd, t(do.call("cbind", prs)), type = "l", col = rgb(.1, .1, .1, .1), 
+        lty = 1, xlab = "Median Income (in $10,000)", 
+        ylab = "Predicted Median House Value", log = "x")
+```
+
+The plot shows the partial dependence of median house value on median income using a logarithmic scale for income. There is a clear positive relationship between the variables. House values remain relatively the same for income levels below 20000, then they rise sharply between 20000 and 80000 median income. However, the curve flattens around a median income of 10 (i.e. 100000) and remains virtually unchanged for higher income levels.  
+
+The predictions for 300 sampled points show some variability but there is a clear upward trend. This suggests that, after a certain level of income is reached (20000), house values tend to be higher within blocks of houses with higher income, but above a threshold of around 100000, additional income does not seem to increase house values.  
+
+# Task 4
+We conduct a 10-fold cross validation and compare the random forest with the single pruned tree and a logistic regression model.
+
+```{r}
+n <- nrow(data) # Sample size
+fold <- 10 # 10-fold cross-validation
+```
+
+We generate the cross-validation folds (train and test indices) using the following code:
+
+```{r}
+set.seed(123)
+folds <- sample(rep(1:fold, ceiling(n/fold)), n)
+head(folds, n = 10)
+```
+
+Now, we loop over all folds, fit the random forest, single pruned tree, and linear regression
+model on the training split and evaluate on the test split by computing cross-validated mean
+squared error.
+
+```{r}
+mse <- list()
+
+for (fold_idx in 1:fold) {
+
+  train_idx <- which(folds != fold_idx)
+  test_idx <- which(folds == fold_idx)
+  
+  # Random forest
+  rf <- ranger(median_house_value ~ ., data = data[train_idx, ], importance = "permutation")
+  
+  # Prediction
+  p_rf <- predict(rf, data = data[test_idx, ])$predictions
+  
+  
+  
+  # Single pruned tree
+  tree <- rpart(median_house_value ~ ., data = data[train_idx, ], method = "anova")
+  
+  # Prediction
+  p_tr <- predict(tree, newdata = data[test_idx, ])
+  
+  
+  
+  
+  # Linear regression
+  lm_model <- lm(median_house_value ~ ., data = data[train_idx, ])
+  
+  # Prediction
+  lm_pred <- predict(lm_model, newdata = data[test_idx, ])
+
+  
+  
+  mse[[fold_idx]] <- unlist(lapply(
+    list(rf = p_rf, tree = p_tr, lrm = lm_pred), 
+    function(predicted) {
+      # Compute Mean Squared Error (MSE)
+      mean((data[test_idx, "median_house_value"] - predicted)^2)
+    }
+  ))
+}
+```
+
+```{r fig.width=9, fig.height=9}
+#Cross validation results for the 10fold cross-validation - MSE
+boxplot(do.call("rbind", mse), ylab = "Cross-validated MSE score", col = c('plum', 'palevioletred', 'pink'), main = "Cross validation results for the 10 fold cross-validation (MSE)")
+```
+
+The random forest clearly outperforms the single pruned tree and logistic
+regression in terms of cross-validated MSE score.  The box plot for rf is tightly packed, suggesting low variability in its cross-validated MSE scores.
+
+This Decision Tree model has the highest MSE scores, meaning it performs worse compared to rf and lrm. The box plot shows some variability.
+
+The linear regression model MSE scores are higher than rf but lower than tree, placing it in the middle in terms of performance. The box plot shows moderate variability.
+
+To sum up, among the three models, random forest (rf) is the most accurate with the lowest MSE scores and consistent performance. Linear regression (lrm) performs moderately well but is less accurate than random forest. Decision tree (tree) has the highest error and variability, making it the least effective model in this comparison.
