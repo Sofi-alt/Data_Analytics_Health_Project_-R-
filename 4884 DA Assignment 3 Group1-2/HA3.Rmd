@@ -1,7 +1,5 @@
 ---
 title: '4884 Data Analytics: Assignment 3'
-author: 'Group 1: Sofia Papushina(12341721), Sofiia Karnaukhova(12322614), Vladyslava
-  Stepanovska(12328455), Matthäus Georg Engelbrecht(12318768), Samuel Gorazd Kapalla(12319654)'
 output:
   html_document:
     df_print: paged
